@@ -4,7 +4,7 @@ VaultDrop is a focused Windows desktop app for uploading media directly to a Fan
 
 ## Features
 
-- Connects directly to Fansly with a Management Session—no ChatGPT or third-party login service.
+- Connects to Fansly with a Management Session.
 - Uploads images, videos, and audio without requiring a title or post.
 - Loads existing Vault collections.
 - Lets you choose a collection for each queued file or set one collection for the entire queue.
