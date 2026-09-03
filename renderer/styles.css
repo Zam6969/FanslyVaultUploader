@@ -16,7 +16,7 @@ body::before { width: 520px; height: 520px; right: -210px; top: -230px; backgrou
 body::after { width: 420px; height: 420px; left: -180px; bottom: -220px; background: radial-gradient(circle, rgba(255,184,101,.18), rgba(255,184,101,0) 70%); }
 button { font: inherit; }
 .hidden { display: none !important; }
-.titlebar { height: 42px; -webkit-app-region: drag; }
+.titlebar { position: sticky; top: 0; z-index: 50; height: 42px; -webkit-app-region: drag; background: rgba(244,241,235,.88); border-bottom: 1px solid rgba(23,21,21,.05); backdrop-filter: blur(16px); }
 .app-shell { position: relative; z-index: 1; width: min(900px, calc(100% - 48px)); margin: 0 auto; padding-bottom: 42px; }
 
 .topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 0 22px; }
