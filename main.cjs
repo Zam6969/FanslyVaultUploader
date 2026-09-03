@@ -137,10 +137,12 @@ function publicMedia(media) {
 }
 
 function publicCollection(album) {
+  const type = Number(album?.type || 0);
   return {
     id: String(album?.id || ''),
-    title: String(album?.title || 'Untitled collection').slice(0, 120),
+    title: type === 1000 ? 'Posts' : type === 5000 ? 'Messages' : String(album?.title || 'Untitled collection').slice(0, 120),
     itemCount: Math.max(0, Number(album?.itemCount || 0)),
+    assignable: type === 0,
   };
 }
 
@@ -149,13 +151,9 @@ async function getVaultAlbumInfo() {
   const albums = Array.isArray(response?.albums) ? response.albums : Array.isArray(response) ? response : [];
   const allAlbum = albums.find((album) => Number(album?.type || 0) === 38000);
   const collections = albums
-    .filter((album) => album?.id && Number(album?.type || 0) === 0)
+    .filter((album) => album?.id && Number(album?.type || 0) !== 38000)
     .map(publicCollection);
   return { allAlbumId: String(allAlbum?.id || '38000'), collections };
-}
-
-async function listVaultCollections() {
-  return (await getVaultAlbumInfo()).collections;
 }
 
 async function listVaultMediaRaw(albumId = '') {
@@ -453,7 +451,7 @@ app.whenReady().then(() => {
     let uploaded = 0;
     try {
       const { allAlbumId, collections } = await getVaultAlbumInfo();
-      const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
+      const collectionById = new Map(collections.filter((collection) => collection.assignable).map((collection) => [collection.id, collection]));
       for (const file of files) {
         try {
           const collectionId = String(file.collectionId || '');

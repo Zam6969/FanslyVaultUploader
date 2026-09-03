@@ -84,7 +84,7 @@ function formatDate(timestamp) {
 }
 
 function fillCollectionSelect(select, selectedId) {
-  const options = [{ id: '', title: 'Vault only' }, ...state.collections];
+  const options = [{ id: '', title: 'Vault only' }, ...state.collections.filter((collection) => collection.assignable !== false)];
   select.replaceChildren(...options.map((collection) => {
     const option = document.createElement('option');
     option.value = collection.id;
