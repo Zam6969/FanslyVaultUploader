@@ -1,0 +1,39 @@
+{
+  "name": "vaultdrop-desktop",
+  "version": "1.2.0",
+  "description": "A focused desktop media uploader for the Fansly Vault.",
+  "main": "main.cjs",
+  "author": "VaultDrop",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "44.1.1",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.vaultdrop.uploader",
+    "productName": "VaultDrop",
+    "asar": true,
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "renderer/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "VaultDrop.exe"
+    }
+  }
+}

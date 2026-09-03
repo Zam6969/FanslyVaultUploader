@@ -1,0 +1,20 @@
+node_modules/
+release/
+dist/
+out/
+
+# Local secrets and runtime sessions
+.env
+.env.*
+!.env.example
+management-session.bin
+*.session
+*.token
+
+# Logs and editor files
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

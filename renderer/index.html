@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data: https://*.fansly.com; media-src https://*.fansly.com; font-src 'self'; connect-src 'none'" />
+    <title>VaultDrop</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="titlebar" aria-hidden="true"></div>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15.5V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <div class="brand-name">VaultDrop</div>
+            <div class="brand-sub">Desktop uploader</div>
+          </div>
+        </div>
+        <button class="connection-pill" id="connectButton">
+          <span class="status-dot"></span>
+          <span id="connectionLabel">Connect session</span>
+        </button>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="eyebrow"><span></span> Direct to Fansly</div>
+          <h1>Your media,<br /><em>straight to the Vault.</em></h1>
+          <p>Choose images, videos, or audio, pick a collection if you want, and upload. No titles, post settings, or third-party connection service.</p>
+        </section>
+
+        <section class="drop-card">
+          <button class="dropzone" id="chooseButton">
+            <span class="drop-icon">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 15.5V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <strong>Choose media</strong>
+            <small>IMAGES · VIDEOS · AUDIO</small>
+          </button>
+        </section>
+
+        <section class="vault-card hidden" id="vaultCard">
+          <div class="vault-heading">
+            <div>
+              <span>Your Fansly Vault</span>
+              <h2 id="vaultTitle">Uploaded media</h2>
+            </div>
+            <div class="vault-heading-actions">
+              <button class="refresh-button" id="repairButton">Fix missing uploads</button>
+              <button class="refresh-button" id="refreshButton" aria-label="Refresh Vault">↻ Refresh</button>
+            </div>
+          </div>
+          <div class="collection-tabs" id="collectionTabs" aria-label="Vault collections"></div>
+          <div class="vault-loading" id="vaultLoading">Loading your Vault…</div>
+          <div class="vault-empty hidden" id="vaultEmpty">No uploaded media found yet.</div>
+          <div class="vault-grid hidden" id="vaultGrid"></div>
+        </section>
+
+        <section class="queue-card hidden" id="queueCard">
+          <div class="queue-heading">
+            <div>
+              <span>Upload queue</span>
+              <h2 id="queueTitle">0 files</h2>
+            </div>
+            <div class="queue-actions">
+              <label for="queueCollectionSelect">Set all</label>
+              <select id="queueCollectionSelect" aria-label="Set collection for all queued media"></select>
+              <button class="text-button" id="clearButton">Clear</button>
+            </div>
+          </div>
+          <div class="queue" id="queue"></div>
+          <button class="upload-button" id="uploadButton">Upload media to Fansly Vault</button>
+        </section>
+
+        <footer>
+          <span class="lock">●</span>
+          Your management session is encrypted on this computer
+          <i></i>
+          Uses Fansly’s first-party upload service
+        </footer>
+      </main>
+    </div>
+
+    <div class="modal-backdrop hidden" id="sessionModal">
+      <section class="session-modal" role="dialog" aria-modal="true" aria-labelledby="sessionTitle">
+        <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+        <div class="eyebrow"><span></span> Fansly management session</div>
+        <h2 id="sessionTitle">Connect without sharing your password.</h2>
+        <p>Create a session in Fansly’s Creator Dashboard with <strong>Create Posts</strong> access, then paste its single-use link below.</p>
+        <label for="sessionInput">Management-session link</label>
+        <input id="sessionInput" type="password" autocomplete="off" placeholder="https://fansly.com/managementsession/claim/…" />
+        <div class="session-error hidden" id="sessionError"></div>
+        <button class="session-submit" id="sessionSubmit">Connect management session</button>
+        <small>The link is sent only to Fansly to claim the session. VaultDrop stores the resulting session encrypted with Windows.</small>
+      </section>
+    </div>
+    <div class="toast hidden" id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
