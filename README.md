@@ -60,8 +60,6 @@ npm start
 3. Copy the single-use claim link.
 4. Open VaultDrop, choose **Connect session**, and paste the link into the local app.
 
-Do not paste a Management Session link into a chat, issue, commit, or README. The claim link is sent to Fansly only. After it is claimed, the resulting session token is encrypted by Windows and stored in Electron's application-data directory—not in this repository.
-
 ## Development notes
 
 - Main process and Fansly communication: `main.cjs`
