@@ -61,21 +61,27 @@ h1 em { color: var(--pink); font-style: normal; }
 .collection-tab { flex: 0 0 auto; border: 1px solid rgba(23,21,21,.08); border-radius: 999px; background: #f5f0eb; padding: 7px 11px; color: #746a64; font-size: 10px; font-weight: 750; cursor: pointer; }
 .collection-tab:hover { color: var(--ink); background: white; }
 .collection-tab.active { border-color: var(--ink); background: var(--ink); color: white; }
-.vault-loading, .vault-empty { display: grid; min-height: 135px; place-items: center; border-radius: 18px; background: #fbfaf8; color: #8b817a; font-size: 12px; font-weight: 650; }
-.vault-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; max-height: 405px; overflow-y: auto; padding-right: 2px; }
-.media-tile { position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 15px; background: #e9e3de; }
-.media-tile video, .media-tile img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.vault-loading, .vault-empty { min-height: 135px; border-radius: 18px; background: #fbfaf8; color: #8b817a; font-size: 12px; font-weight: 650; }
+.vault-empty { display: grid; place-items: center; }
+.vault-loading { display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 28px; }
+.vault-loading-copy { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.vault-loading-copy strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #625953; font-size: 12px; }
+.vault-loading-copy span { flex: 0 0 auto; color: #9b8f88; font-size: 11px; }
+.vault-load-track { height: 7px; overflow: hidden; border-radius: 99px; background: #e9e3de; }
+.vault-load-bar { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--pink), #ff8aae); transition: width .22s ease; }
+.vault-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; gap: 9px; max-height: 520px; overflow-y: auto; padding-right: 2px; }
+.media-tile { overflow: hidden; border: 1px solid rgba(23,21,21,.06); border-radius: 15px; background: #fff; box-shadow: 0 5px 15px rgba(30,22,20,.05); }
+.media-tile video, .media-tile img { width: 100%; height: auto; aspect-ratio: 1 / 1; display: block; object-fit: cover; }
 .media-tile video { background: #211e1d; }
-.audio-preview { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: radial-gradient(circle at 50% 20%, #ff82aa, #6f3150 75%); }
+.audio-preview { width: 100%; aspect-ratio: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: radial-gradient(circle at 50% 20%, #ff82aa, #6f3150 75%); }
 .audio-preview > span { color: rgba(255,255,255,.9); font-size: 12px; font-weight: 850; letter-spacing: .16em; }
 .audio-preview audio { position: relative; z-index: 2; width: calc(100% - 18px); height: 34px; }
-.media-tile::after { content: ""; position: absolute; inset: auto 0 0; height: 66%; pointer-events: none; background: linear-gradient(transparent, rgba(10,8,8,.82)); }
-.media-meta { position: absolute; z-index: 1; left: 10px; right: 10px; bottom: 9px; color: white; }
+.media-meta { min-width: 0; padding: 9px 10px 10px; color: var(--ink); }
 .media-name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 10px; font-weight: 750; }
-.media-date { margin-top: 2px; opacity: .73; font-size: 9px; }
+.media-date { margin-top: 2px; color: #8b817a; font-size: 9px; }
 .media-collections { display: flex; gap: 4px; margin-top: 5px; overflow: hidden; }
-.media-collections span { max-width: 88px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-radius: 999px; background: rgba(255,255,255,.2); padding: 3px 6px; font-size: 8px; font-weight: 750; }
-.media-placeholder { width: 100%; height: 100%; display: grid; place-items: center; color: #766b65; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.media-collections span { max-width: 88px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-radius: 999px; background: #eee8e2; padding: 3px 6px; color: #6f655f; font-size: 8px; font-weight: 750; }
+.media-placeholder { width: 100%; aspect-ratio: 1 / 1; display: grid; place-items: center; color: #766b65; background: #e9e3de; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
 
 .queue-card { margin-top: 20px; padding: 21px; }
 .queue-heading { display: flex; align-items: end; justify-content: space-between; padding: 0 2px 13px; }

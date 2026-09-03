@@ -8,6 +8,7 @@ const state = {
   activeCollectionId: '',
   queueCollectionId: '',
   vaultLoading: false,
+  vaultProgress: { progress: 0, message: 'Loading your Vault…' },
 };
 
 const connectButton = document.querySelector('#connectButton');
@@ -21,6 +22,10 @@ const clearButton = document.querySelector('#clearButton');
 const vaultCard = document.querySelector('#vaultCard');
 const vaultTitle = document.querySelector('#vaultTitle');
 const vaultLoading = document.querySelector('#vaultLoading');
+const vaultLoadingText = document.querySelector('#vaultLoadingText');
+const vaultLoadingCount = document.querySelector('#vaultLoadingCount');
+const vaultLoadBar = document.querySelector('#vaultLoadBar');
+const vaultLoadTrack = document.querySelector('.vault-load-track');
 const vaultEmpty = document.querySelector('#vaultEmpty');
 const vaultGrid = document.querySelector('#vaultGrid');
 const refreshButton = document.querySelector('#refreshButton');
@@ -94,6 +99,14 @@ function fillCollectionSelect(select, selectedId) {
   }));
 }
 
+function renderVaultProgress() {
+  const loadingProgress = Math.max(0, Math.min(100, Number(state.vaultProgress?.progress || 0)));
+  vaultLoadingText.textContent = state.vaultProgress?.message || 'Loading your Vault…';
+  vaultLoadingCount.textContent = `${loadingProgress}%`;
+  vaultLoadBar.style.width = `${loadingProgress}%`;
+  vaultLoadTrack.setAttribute('aria-valuenow', String(loadingProgress));
+}
+
 function renderVault() {
   const activeCollection = state.collections.find((collection) => collection.id === state.activeCollectionId) || null;
   const visibleMedia = activeCollection
@@ -101,10 +114,12 @@ function renderVault() {
     : state.vault;
   vaultCard.classList.toggle('hidden', !state.connected);
   vaultLoading.classList.toggle('hidden', !state.vaultLoading);
+  renderVaultProgress();
   vaultEmpty.classList.toggle('hidden', state.vaultLoading || visibleMedia.length > 0);
   vaultGrid.classList.toggle('hidden', state.vaultLoading || visibleMedia.length === 0);
   refreshButton.disabled = state.vaultLoading;
   repairButton.disabled = state.vaultLoading;
+  if (state.vaultLoading) return;
   vaultTitle.textContent = activeCollection
     ? `${visibleMedia.length} ${visibleMedia.length === 1 ? 'item' : 'items'} in ${activeCollection.title}`
     : state.vault.length ? `${state.vault.length} uploaded ${state.vault.length === 1 ? 'item' : 'items'}` : 'Uploaded media';
@@ -129,12 +144,11 @@ function renderVault() {
   vaultGrid.replaceChildren(...visibleMedia.map((media) => {
     const tile = document.createElement('article');
     tile.className = 'media-tile';
-    tile.title = media.filename;
 
     if (media.mimetype.startsWith('video/') && media.mediaUrl) {
       const video = document.createElement('video');
       video.src = media.mediaUrl;
-      video.poster = media.posterUrl || '';
+      video.poster = media.thumbnailUrl || media.posterUrl || '';
       video.preload = 'metadata';
       video.muted = true;
       video.controls = true;
@@ -152,7 +166,7 @@ function renderVault() {
       tile.append(audioWrap);
     } else if (media.mediaUrl || media.posterUrl) {
       const image = document.createElement('img');
-      image.src = media.posterUrl || media.mediaUrl;
+      image.src = media.thumbnailUrl || media.posterUrl || media.mediaUrl;
       image.alt = media.filename;
       image.loading = 'lazy';
       tile.append(image);
@@ -193,6 +207,7 @@ function renderVault() {
 async function loadVault() {
   if (!state.connected || state.vaultLoading) return;
   state.vaultLoading = true;
+  state.vaultProgress = { progress: 0, message: 'Starting Vault refresh…' };
   renderVault();
   try {
     const library = await window.vaultdrop.loadVaultLibrary();
@@ -414,6 +429,10 @@ window.vaultdrop.onProgress((update) => {
   if (!file) return;
   Object.assign(file, update);
   render();
+});
+window.vaultdrop.onVaultProgress((update) => {
+  state.vaultProgress = update || state.vaultProgress;
+  if (state.vaultLoading) renderVaultProgress();
 });
 
 window.vaultdrop.checkConnection().then(setConnection).catch(() => setConnection({ connected: false }));

@@ -9,6 +9,8 @@ VaultDrop is a focused Windows desktop app for uploading media directly to a Fan
 - Loads existing Vault collections.
 - Lets you choose a collection for each queued file or set one collection for the entire queue.
 - Shows collection labels on uploaded media and filters the gallery by collection.
+- Caches gallery thumbnails locally and shows progress while the Vault refreshes.
+- Keeps media details below each preview so video and audio controls stay clear.
 - Includes a recovery action for raw uploads that were not registered in the website-visible Vault.
 - Encrypts the claimed session locally with Electron's `safeStorage` API.
 

@@ -1,4 +1,5 @@
-const { app, BrowserWindow, dialog, ipcMain, safeStorage, session } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, protocol, safeStorage, session } = require('electron');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -7,12 +8,17 @@ const FANSLY_MEDIA = 'https://mediav2.fansly.com/api/v1';
 const PART_CONCURRENCY = 4;
 const partition = 'persist:vaultdrop-fansly';
 
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'vaultdrop-thumb', privileges: { secure: true, standard: true, supportFetchAPI: true, stream: true } },
+]);
+
 let mainWindow;
 let fanslySession;
 let authToken = '';
 let connectedAccount = null;
 let uploadRunning = false;
 let sessionFile = '';
+let thumbnailCacheDir = '';
 
 const mimeTypes = {
   '.png': 'image/png',
@@ -54,6 +60,11 @@ const mimeTypes = {
 
 function send(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
+}
+
+function sendVaultProgress(current, total, message) {
+  const progress = total ? Math.min(100, Math.round((current / total) * 100)) : 0;
+  send('vault:progress', { current, total, progress, message });
 }
 
 function createMainWindow() {
@@ -121,7 +132,16 @@ function publicMedia(media) {
   const all = [media, ...variants];
   const locate = (entry) => safeMediaUrl(entry?.locations?.[0]?.location);
   const video = all.filter((entry) => String(entry?.mimetype || '').startsWith('video/')).sort((a, b) => Number(b.height || 0) - Number(a.height || 0)).find(locate);
-  const image = all.filter((entry) => String(entry?.mimetype || '').startsWith('image/')).sort((a, b) => Number(b.width || 0) - Number(a.width || 0)).find(locate);
+  const image = all
+    .filter((entry) => String(entry?.mimetype || '').startsWith('image/'))
+    .sort((a, b) => {
+      const score = (entry) => {
+        const width = Number(entry?.width || 0);
+        return width >= 420 ? width - 420 : 10000 - width;
+      };
+      return score(a) - score(b);
+    })
+    .find(locate);
   const fallback = all.find(locate);
   return {
     id: String(media?.id || ''),
@@ -134,6 +154,64 @@ function publicMedia(media) {
     mediaUrl: locate(video) || locate(fallback),
     posterUrl: locate(image),
   };
+}
+
+const thumbnailExtensions = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'image/avif': '.avif',
+};
+
+async function findCachedThumbnail(cacheKey) {
+  for (const extension of Object.values(thumbnailExtensions)) {
+    const fileName = `${cacheKey}${extension}`;
+    try {
+      await fs.promises.access(path.join(thumbnailCacheDir, fileName), fs.constants.R_OK);
+      return fileName;
+    } catch {}
+  }
+  return '';
+}
+
+async function cacheThumbnail(media) {
+  const source = media.posterUrl || (String(media.mimetype).startsWith('image/') ? media.mediaUrl : '');
+  if (!source) return '';
+  let stableSource = source;
+  try {
+    const sourceUrl = new URL(source);
+    stableSource = `${sourceUrl.origin}${sourceUrl.pathname}`;
+  } catch {}
+  const cacheKey = crypto.createHash('sha256').update(`${media.id}:${stableSource}`).digest('hex');
+  const existing = await findCachedThumbnail(cacheKey);
+  if (existing) return `vaultdrop-thumb://cache/${existing}`;
+
+  try {
+    const response = await fanslySession.fetch(source, { credentials: 'include' });
+    if (!response.ok) return '';
+    const contentType = String(response.headers.get('content-type') || '').split(';')[0].toLowerCase();
+    const extension = thumbnailExtensions[contentType];
+    if (!extension) return '';
+    const declaredSize = Number(response.headers.get('content-length') || 0);
+    if (declaredSize > 32 * 1024 * 1024) return '';
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (!bytes.length || bytes.length > 32 * 1024 * 1024) return '';
+
+    const fileName = `${cacheKey}${extension}`;
+    const finalPath = path.join(thumbnailCacheDir, fileName);
+    const temporaryPath = path.join(thumbnailCacheDir, `${cacheKey}-${process.pid}-${Date.now()}.tmp`);
+    await fs.promises.writeFile(temporaryPath, bytes, { mode: 0o600 });
+    try {
+      await fs.promises.rename(temporaryPath, finalPath);
+    } catch (error) {
+      try { await fs.promises.unlink(temporaryPath); } catch {}
+      if (error?.code !== 'EEXIST') throw error;
+    }
+    return `vaultdrop-thumb://cache/${fileName}`;
+  } catch {
+    return '';
+  }
 }
 
 function publicCollection(album) {
@@ -183,10 +261,13 @@ async function listVaultMediaRaw(albumId = '') {
 }
 
 async function loadVaultLibrary() {
+  sendVaultProgress(3, 100, 'Loading Vault albums…');
   const { allAlbumId, collections } = await getVaultAlbumInfo();
+  sendVaultProgress(10, 100, 'Loading your media…');
   const allMedia = await listVaultMediaRaw(allAlbumId);
   const memberships = new Map();
   const collectionsWithItems = collections.filter((collection) => collection.itemCount !== 0);
+  let scannedCollections = 0;
 
   await runPool(collectionsWithItems, 4, async (collection) => {
     const media = await listVaultMediaRaw(collection.id);
@@ -197,13 +278,35 @@ async function loadVaultLibrary() {
       values.push({ id: collection.id, title: collection.title });
       memberships.set(mediaId, values);
     }
+    scannedCollections += 1;
+    const progress = 10 + Math.round((scannedCollections / Math.max(collectionsWithItems.length, 1)) * 25);
+    sendVaultProgress(progress, 100, `Loading collections ${scannedCollections} of ${collectionsWithItems.length}…`);
   });
 
+  const media = allMedia
+    .map((item) => ({ ...publicMedia(item), collections: memberships.get(String(item?.id || '')) || [] }))
+    .sort((a, b) => b.createdAt - a.createdAt);
+  if (!media.length) {
+    sendVaultProgress(100, 100, 'Vault ready');
+    return { collections, media };
+  }
+
+  let cached = 0;
+  const updateEvery = Math.max(1, Math.floor(media.length / 100));
+  sendVaultProgress(35, 100, `Caching thumbnails 0 of ${media.length}…`);
+  await runPool(media, 6, async (item) => {
+    item.thumbnailUrl = await cacheThumbnail(item);
+    cached += 1;
+    if (cached === media.length || cached % updateEvery === 0) {
+      const progress = 35 + Math.round((cached / media.length) * 65);
+      sendVaultProgress(progress, 100, `Caching thumbnails ${cached} of ${media.length}…`);
+    }
+  });
+
+  sendVaultProgress(100, 100, 'Vault ready');
   return {
     collections,
-    media: allMedia
-      .map((item) => ({ ...publicMedia(item), collections: memberships.get(String(item?.id || '')) || [] }))
-      .sort((a, b) => b.createdAt - a.createdAt),
+    media,
   };
 }
 
@@ -398,9 +501,31 @@ async function uploadMediaFile(filePath, queueId) {
   throw new Error('Fansly is still processing this file. Check your Vault in a few minutes.');
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   fanslySession = session.fromPartition(partition);
   sessionFile = path.join(app.getPath('userData'), 'management-session.bin');
+  thumbnailCacheDir = path.join(app.getPath('userData'), 'thumbnail-cache');
+  await fs.promises.mkdir(thumbnailCacheDir, { recursive: true });
+  protocol.handle('vaultdrop-thumb', async (request) => {
+    try {
+      const requestUrl = new URL(request.url);
+      const fileName = decodeURIComponent(requestUrl.pathname).replace(/^\/+/, '');
+      if (requestUrl.hostname !== 'cache' || !/^[a-f0-9]{64}\.(jpg|png|webp|gif|avif)$/.test(fileName)) {
+        return new Response('Not found', { status: 404 });
+      }
+      const extension = path.extname(fileName).toLowerCase();
+      const contentTypes = { '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.avif': 'image/avif' };
+      const bytes = await fs.promises.readFile(path.join(thumbnailCacheDir, fileName));
+      return new Response(bytes, {
+        headers: {
+          'content-type': contentTypes[extension],
+          'cache-control': 'public, max-age=31536000, immutable',
+        },
+      });
+    } catch {
+      return new Response('Not found', { status: 404 });
+    }
+  });
   createMainWindow();
 
   ipcMain.handle('fansly:connect', (_event, managementSession) => claimManagementSession(managementSession));

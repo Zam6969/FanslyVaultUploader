@@ -18,4 +18,9 @@ contextBridge.exposeInMainWorld('vaultdrop', {
     ipcRenderer.on('videos:progress', listener);
     return () => ipcRenderer.removeListener('videos:progress', listener);
   },
+  onVaultProgress: (callback) => {
+    const listener = (_event, value) => callback(value);
+    ipcRenderer.on('vault:progress', listener);
+    return () => ipcRenderer.removeListener('vault:progress', listener);
+  },
 });
